@@ -1,0 +1,6 @@
+name = "encaminhador"
+main = "src/worker.js"
+compatibility_date = "2024-09-23"
+
+# Para deploy em workers.dev (subdominio gratuito)
+workers_dev = true

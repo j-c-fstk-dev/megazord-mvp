@@ -1,50 +1,42 @@
 /**
  * Encaminhador — Cloudflare Worker (produção)
- * Mesma lógica do redirector Python, mas rodando no edge da Cloudflare.
- * Latência global < 50ms, free tier: 100k requests/dia.
- *
- * Deploy:
- *   1. Instale wrangler: npm install -g wrangler
- *   2. Login: wrangler login
- *   3. Configure secrets:
- *      wrangler secret put SUPABASE_URL
- *      wrangler secret put SUPABASE_ANON_KEY
- *   4. Deploy: wrangler deploy
- *
- * Ou copie este código direto no dashboard Cloudflare > Workers.
+ * Versão 2 — compatibility_date 2024-09-23
  */
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const shortCode = url.pathname.split('/')[1];
 
     // Health check
-    if (shortCode === 'health') {
-      return new Response(JSON.stringify({ status: 'ok' }), {
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    if (!shortCode) {
-      return new Response('Encaminhador — redirector ativo', { status: 200 });
+    if (shortCode === 'health' || shortCode === '') {
+      return new Response(
+        JSON.stringify({ status: 'ok', service: 'encaminhador', time: new Date().toISOString() }),
+        { headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
     // 1. Busca destination no Supabase
-    const r = await fetch(
-      `${env.SUPABASE_URL}/rest/v1/short_links?short_code=eq.${shortCode}&active=eq.true`,
-      {
-        headers: {
-          apikey: env.SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
-        },
+    let link;
+    try {
+      const r = await fetch(
+        `${env.SUPABASE_URL}/rest/v1/short_links?short_code=eq.${shortCode}&active=eq.true`,
+        {
+          headers: {
+            apikey: env.SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+          },
+        }
+      );
+      const data = await r.json();
+      if (!data || data.length === 0) {
+        return new Response('Link nao encontrado', { status: 404 });
       }
-    );
-    const data = await r.json();
-    if (!data || data.length === 0) {
-      return new Response('Link nao encontrado', { status: 404 });
+      link = data[0];
+    } catch (err) {
+      console.error('Supabase fetch failed:', err);
+      return new Response('Erro ao buscar link', { status: 500 });
     }
-    const link = data[0];
 
     // 2. Monta payload do clique
     const ip = request.headers.get('cf-connecting-ip') || '';
@@ -63,8 +55,6 @@ export default {
     };
 
     // 3. Registra clique em background (nao bloqueia redirect)
-    // ctx.waitUntil eh essencial aqui
-    const ctx = request.ctx || { waitUntil: (p) => p };
     ctx.waitUntil(
       fetch(`${env.SUPABASE_URL}/rest/v1/clicks`, {
         method: 'POST',
@@ -83,7 +73,7 @@ export default {
   }
 };
 
-// Helper: SHA-256 hash (para LGPD-safe IP hashing)
+// Helper: SHA-256 hash (LGPD-safe IP)
 async function sha256(message) {
   const msgBuffer = new TextEncoder().encode(message);
   const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
