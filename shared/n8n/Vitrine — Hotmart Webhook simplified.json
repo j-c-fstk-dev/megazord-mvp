@@ -1,0 +1,242 @@
+{
+  "name": "Vitrine — Hotmart Webhook simplified",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "f664d1e5-669c-4172-bfbc-9e0f5845b5cd",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "314b4631-e04a-43ea-9e4a-14dc9266b7a9",
+      "name": "Webhook",
+      "webhookId": "f664d1e5-669c-4172-bfbc-9e0f5845b5cd"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1uzq6Kttr8RQVJtriroWEOu_xkLJ0C_CVh81LYn37jsQ",
+          "mode": "list",
+          "cachedResultName": "Megazord Vendas",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1uzq6Kttr8RQVJtriroWEOu_xkLJ0C_CVh81LYn37jsQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "vendas",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1uzq6Kttr8RQVJtriroWEOu_xkLJ0C_CVh81LYn37jsQ/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "transaction_id",
+              "displayName": "transaction_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "product_id",
+              "displayName": "product_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "product_name",
+              "displayName": "product_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "value_brl",
+              "displayName": "value_brl",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "buyer_name",
+              "displayName": "buyer_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "buyer_email",
+              "displayName": "buyer_email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "click_id",
+              "displayName": "click_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "utm_source",
+              "displayName": "utm_source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "utm_medium",
+              "displayName": "utm_medium",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "utm_campaign",
+              "displayName": "utm_campaign",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "utm_content",
+              "displayName": "utm_content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "utm_term",
+              "displayName": "utm_term",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "bundle_id",
+              "displayName": "bundle_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        400,
+        0
+      ],
+      "id": "d992fa5f-89fd-4b27-8e7a-282a2caf1e58",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "hEL0DVhBwaE1Wi5T",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ════════════════════════════════════════════════════════════════\n// VITRINE — Node unico: extrai venda + busca UTMs no Supabase\n// ════════════════════════════════════════════════════════════════\n\n// 1. Recebe payload da Hotmart\nconst payload = $input.first().json;\nconst event = payload.event;\nconst data = payload.data || payload;\n\n// 2. Extrai click_id (vem da Hotmart como \"source\" se voce passou via UTM)\nconst clickId = data.purchase?.source\n  || data.source\n  || data.purchase?.tracking?.source\n  || null;\n\n// 3. Monta objeto base da venda\nconst venda = {\n  data: data.purchase?.approved_at || new Date().toISOString(),\n  transaction_id: data.purchase?.transaction || data.id || '',\n  product_id: data.product?.id || '',\n  product_name: data.product?.name || '',\n  value_brl: parseFloat(data.purchase?.price?.value || 0),\n  buyer_name: data.buyer?.name || '',\n  buyer_email: data.buyer?.email || '',\n  click_id: clickId || '',\n  event: event || '',\n};\n\n// 4. UTMs default (direct)\nlet utms = {\n  utm_source: 'direct',\n  utm_medium: '',\n  utm_campaign: '',\n  utm_content: '',\n  utm_term: '',\n};\n\n// 5. Se tem click_id valido, busca UTMs no Supabase\nif (clickId && clickId.length > 0) {\n  try {\n    const response = await this.helpers.httpRequest({\n      method: 'GET',\n      url: `https://fbeofenkrvmqdlmgjfna.supabase.co/rest/v1/clicks?click_id=eq.${clickId}&select=utm_source,utm_medium,utm_campaign,utm_content,utm_term`,\n      headers: {\n        apikey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZiZW9mZW5rcnZtcWRsbWdqZm5hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA2Mzk3NzIsImV4cCI6MjEwNjIxNTc3Mn0.fHBBbNAM4BUpBoS2-mvxmlgFFe9XCXk7w0DmnfJT2jg',\n        Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZiZW9mZW5rcnZtcWRsbWdqZm5hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA2Mzk3NzIsImV4cCI6MjEwNjIxNTc3Mn0.fHBBbNAM4BUpBoS2-mvxmlgFFe9XCXk7w0DmnfJT2jg',\n      },\n      timeout: 10000,\n    });\n    \n    if (Array.isArray(response) && response.length > 0) {\n      utms = {\n        utm_source: response[0].utm_source || 'direct',\n        utm_medium: response[0].utm_medium || '',\n        utm_campaign: response[0].utm_campaign || '',\n        utm_content: response[0].utm_content || '',\n        utm_term: response[0].utm_term || '',\n      };\n    }\n  } catch (e) {\n    // Se Supabase falhar, continua com 'direct' — workflow NAO para\n    console.log('Supabase lookup failed:', e.message);\n  }\n}\n\n// 6. Combina venda + UTMs e devolve pro Google Sheets\nreturn [{\n  json: {\n    ...venda,\n    ...utms,\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "6b75d878-be59-4241-9830-e72778745176",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "10861e51-13b6-4a08-bfc8-75a96e47de97",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1542d61df9df34de4a34b7de96ff916ed9b0faf483bebf0106736f12a697f932"
+  },
+  "nodeGroups": [],
+  "id": "o0A4a9pposdan2lS",
+  "tags": []
+}

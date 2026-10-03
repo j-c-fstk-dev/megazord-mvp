@@ -8,7 +8,7 @@ links, vendas e DMs e devolve o conteudo da manha pronto.
 | Filhote | Status | URL / Nota |
 |---------|--------|-----------|
 | Encaminhador | ✅ Deploy Cloudflare Worker | `https://encaminhador.jardimdofazer.workers.dev` |
-| Vitrine | ⏳ Pendente | - |
+| Vitrine | ✅ End-to-end OK | Sheets + n8n webhook |
 | Storymetro | ⏳ Pendente | - |
 | Sussurros | ⏳ Pendente | - |
 | Sintetizador | ⏳ Pendente | - |
