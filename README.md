@@ -18,7 +18,7 @@ links, vendas e DMs e devolve o conteudo da manha pronto.
 | Apelido       | Original        | Funcao                                       |
 |---------------|-----------------|----------------------------------------------|
 | encaminhador  | Maquina Links   | Redirector rastreavel (Cloudflare Worker)    |
-| vitrine       | Linda Visao     | Painel de vendas (Sheets + Looker)           |
+| Vitrine 		| ✅ End-to-end OK| Nuvemshop webhook → n8n → Sheets 		     |
 | storymetro    | StoryRocks      | Medidor de stories (Meta Graph API)          |
 | sussurros     | Entrelinhas     | Analisador de DMs (GLM)                      |
 | sintetizador  | Megazord        | Orquestrador diario (n8n cron)               |

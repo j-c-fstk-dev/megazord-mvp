@@ -1,10 +1,10 @@
 {
-  "name": "Vitrine — Hotmart Webhook simplified",
+  "name": "vitrine-nuvemshop-webhook",
   "nodes": [
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "f664d1e5-669c-4172-bfbc-9e0f5845b5cd",
+        "path": "nuvemshop-vendas",
         "options": {}
       },
       "type": "n8n-nodes-base.webhook",
@@ -46,7 +46,8 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "canBeUsedToMatch": true,
+              "removed": false
             },
             {
               "id": "transaction_id",
@@ -55,7 +56,8 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "canBeUsedToMatch": true,
+              "removed": false
             },
             {
               "id": "product_id",
@@ -64,7 +66,8 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "canBeUsedToMatch": true,
+              "removed": false
             },
             {
               "id": "product_name",
@@ -73,7 +76,8 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "canBeUsedToMatch": true,
+              "removed": false
             },
             {
               "id": "value_brl",
@@ -82,7 +86,8 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "canBeUsedToMatch": true,
+              "removed": false
             },
             {
               "id": "buyer_name",
@@ -91,7 +96,8 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "canBeUsedToMatch": true,
+              "removed": false
             },
             {
               "id": "buyer_email",
@@ -100,7 +106,8 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "canBeUsedToMatch": true,
+              "removed": false
             },
             {
               "id": "click_id",
@@ -109,7 +116,8 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "canBeUsedToMatch": true,
+              "removed": false
             },
             {
               "id": "utm_source",
@@ -118,7 +126,8 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "canBeUsedToMatch": true,
+              "removed": false
             },
             {
               "id": "utm_medium",
@@ -127,7 +136,8 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "canBeUsedToMatch": true,
+              "removed": false
             },
             {
               "id": "utm_campaign",
@@ -136,7 +146,8 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "canBeUsedToMatch": true,
+              "removed": false
             },
             {
               "id": "utm_content",
@@ -145,7 +156,8 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "canBeUsedToMatch": true,
+              "removed": false
             },
             {
               "id": "utm_term",
@@ -154,7 +166,8 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "canBeUsedToMatch": true,
+              "removed": false
             },
             {
               "id": "bundle_id",
@@ -163,7 +176,18 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "event",
+              "displayName": "event",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
             }
           ],
           "attemptToConvertTypes": false,
@@ -188,7 +212,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// ════════════════════════════════════════════════════════════════\n// VITRINE — Node unico: extrai venda + busca UTMs no Supabase\n// ════════════════════════════════════════════════════════════════\n\n// 1. Recebe payload da Hotmart\nconst payload = $input.first().json;\nconst event = payload.event;\nconst data = payload.data || payload;\n\n// 2. Extrai click_id (vem da Hotmart como \"source\" se voce passou via UTM)\nconst clickId = data.purchase?.source\n  || data.source\n  || data.purchase?.tracking?.source\n  || null;\n\n// 3. Monta objeto base da venda\nconst venda = {\n  data: data.purchase?.approved_at || new Date().toISOString(),\n  transaction_id: data.purchase?.transaction || data.id || '',\n  product_id: data.product?.id || '',\n  product_name: data.product?.name || '',\n  value_brl: parseFloat(data.purchase?.price?.value || 0),\n  buyer_name: data.buyer?.name || '',\n  buyer_email: data.buyer?.email || '',\n  click_id: clickId || '',\n  event: event || '',\n};\n\n// 4. UTMs default (direct)\nlet utms = {\n  utm_source: 'direct',\n  utm_medium: '',\n  utm_campaign: '',\n  utm_content: '',\n  utm_term: '',\n};\n\n// 5. Se tem click_id valido, busca UTMs no Supabase\nif (clickId && clickId.length > 0) {\n  try {\n    const response = await this.helpers.httpRequest({\n      method: 'GET',\n      url: `https://fbeofenkrvmqdlmgjfna.supabase.co/rest/v1/clicks?click_id=eq.${clickId}&select=utm_source,utm_medium,utm_campaign,utm_content,utm_term`,\n      headers: {\n        apikey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZiZW9mZW5rcnZtcWRsbWdqZm5hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA2Mzk3NzIsImV4cCI6MjEwNjIxNTc3Mn0.fHBBbNAM4BUpBoS2-mvxmlgFFe9XCXk7w0DmnfJT2jg',\n        Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZiZW9mZW5rcnZtcWRsbWdqZm5hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA2Mzk3NzIsImV4cCI6MjEwNjIxNTc3Mn0.fHBBbNAM4BUpBoS2-mvxmlgFFe9XCXk7w0DmnfJT2jg',\n      },\n      timeout: 10000,\n    });\n    \n    if (Array.isArray(response) && response.length > 0) {\n      utms = {\n        utm_source: response[0].utm_source || 'direct',\n        utm_medium: response[0].utm_medium || '',\n        utm_campaign: response[0].utm_campaign || '',\n        utm_content: response[0].utm_content || '',\n        utm_term: response[0].utm_term || '',\n      };\n    }\n  } catch (e) {\n    // Se Supabase falhar, continua com 'direct' — workflow NAO para\n    console.log('Supabase lookup failed:', e.message);\n  }\n}\n\n// 6. Combina venda + UTMs e devolve pro Google Sheets\nreturn [{\n  json: {\n    ...venda,\n    ...utms,\n  }\n}];"
+        "jsCode": "// ════════════════════════════════════════════════════════════════\n// VITRINE — Node unico: recebe webhook Nuvemshop com secret, busca order\n// VERSAO 3 — corrigido acesso ao body do webhook\n// ════════════════════════════════════════════════════════════════\n\n// 1. Recebe webhook da Nuvemshop\nconst webhook = $input.first().json;\n\n// 1.1 VERIFICA SECRET\nconst EXPECTED_SECRET = 'Om2PvrFSAvZ7t43FtLroAMnL057cuxVWCi-o5ZXuGcw';\nconst receivedSecret = webhook.query?.secret || '';\nif (receivedSecret !== EXPECTED_SECRET) {\n  console.log('Unauthorized: secret invalido');\n  return [{ json: { error: 'unauthorized', reason: 'invalid secret' } }];\n}\n\n// 2. Extrai dados do body (nao direto do webhook)\nconst body = webhook.body || webhook;\nconst storeId = body.store_id;\nconst eventName = body.event;\nconst orderId = body.id;\n\nconsole.log('Webhook recebido:', { storeId, eventName, orderId });\n\n// So processa order/paid (pode adicionar order/cancelled depois)\nif (eventName !== 'order/paid') {\n  return [{ json: { skipped: true, reason: `Evento ${eventName} ignorado` } }];\n}\n\n// 3. Credenciais Nuvemshop\nconst NUVEMSHOP_STORE_ID = '1307908';\nconst NUVEMSHOP_ACCESS_TOKEN = '71f66327cdc038e155513e38ac2b0163f876810d';\nconst NUVEMSHOP_USER_AGENT = 'Megazord-MVP (contato@jardimdofazer.com.br)';\n\n// 4. Busca detalhes do pedido via GET /orders/{id}\nlet order;\ntry {\n  const response = await this.helpers.httpRequest({\n    method: 'GET',\n    url: `https://api.nuvemshop.com.br/2025-03/${NUVEMSHOP_STORE_ID}/orders/${orderId}`,\n    headers: {\n      'Authorization': `Bearer ${NUVEMSHOP_ACCESS_TOKEN}`,\n      'User-Agent': NUVEMSHOP_USER_AGENT,\n      'Content-Type': 'application/json',\n    },\n    timeout: 15000,\n  });\n  order = response;\n} catch (e) {\n  console.log('Erro ao buscar order:', e.message);\n  return [{ json: { error: 'Nuvemshop API failed', message: e.message, orderId } }];\n}\n\n// 5. Extrai dados do pedido\nconst buyer = order.customer || {};\nconst products = order.products || [];\nconst firstProduct = products[0] || {};\n\nconst clickId = order.extra?.click_id\n  || (order.attributes || []).find(a => a.name === 'click_id')?.value\n  || null;\n\n// 6. Monta objeto da venda\nconst venda = {\n  data: order.paid_at || order.created_at || new Date().toISOString(),\n  transaction_id: String(order.id || ''),\n  product_id: String(firstProduct.product_id || ''),\n  product_name: firstProduct.name || (products.length > 1 ? `${products.length} produtos` : ''),\n  value_brl: parseFloat(order.total || 0),\n  buyer_name: buyer.name || '',\n  buyer_email: order.contact_email || buyer.email || '',\n  click_id: clickId || '',\n  event: eventName,\n};\n\n// 7. UTMs default (direct)\nlet utms = {\n  utm_source: 'direct',\n  utm_medium: '',\n  utm_campaign: '',\n  utm_content: '',\n  utm_term: '',\n};\n\n// 8. Se tem click_id, busca UTMs no Supabase\nif (clickId && clickId.length > 0) {\n  try {\n    const supaResponse = await this.helpers.httpRequest({\n      method: 'GET',\n      url: `https://fbeofenkrvmqdlmgjfna.supabase.co/rest/v1/clicks?click_id=eq.${clickId}&select=utm_source,utm_medium,utm_campaign,utm_content,utm_term`,\n      headers: {\n        apikey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZiZW9mZW5rcnZtcWRsbWdqZm5hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA2Mzk3NzIsImV4cCI6MjEwNjIxNTc3Mn0.fHBBbNAM4BUpBoS2-mvxmlgFFe9XCXk7w0DmnfJT2jg',\n        Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZiZW9mZW5rcnZtcWRsbWdqZm5hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA2Mzk3NzIsImV4cCI6MjEwNjIxNTc3Mn0.fHBBbNAM4BUpBoS2-mvxmlgFFe9XCXk7w0DmnfJT2jg',\n      },\n      timeout: 10000,\n    });\n    if (Array.isArray(supaResponse) && supaResponse.length > 0) {\n      utms = {\n        utm_source: supaResponse[0].utm_source || 'direct',\n        utm_medium: supaResponse[0].utm_medium || '',\n        utm_campaign: supaResponse[0].utm_campaign || '',\n        utm_content: supaResponse[0].utm_content || '',\n        utm_term: supaResponse[0].utm_term || '',\n      };\n    }\n  } catch (e) {\n    console.log('Supabase lookup failed:', e.message);\n  }\n}\n\n// 9. Devolve pro Google Sheets\nreturn [{\n  json: {\n    ...venda,\n    ...utms,\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -231,7 +255,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "10861e51-13b6-4a08-bfc8-75a96e47de97",
+  "versionId": "eb11a239-25b3-49b1-b58e-772ca761ec5c",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "1542d61df9df34de4a34b7de96ff916ed9b0faf483bebf0106736f12a697f932"

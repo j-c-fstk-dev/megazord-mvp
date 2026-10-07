@@ -48,3 +48,11 @@ build/
 # Google OAuth client secret (credencial)
 client_secret_*.json
 client_secret_*.apps.googleusercontent.com.json
+
+# Secrets locais (NUNCA commitar)
+.secrets
+secrets.local.json
+*_secret.txt
+
+# Nuvemshop webhook config (gerado pelo create_nuvemshop_webhook.py)
+webhook_secret.txt
