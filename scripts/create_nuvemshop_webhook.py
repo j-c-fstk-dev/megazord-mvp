@@ -22,7 +22,7 @@ load_dotenv()
 # ════════════════════════════════════════════════════════════════
 # CONFIGURACAO — edita essa linha
 # ════════════════════════════════════════════════════════════════
-WEBHOOK_URL = 'https://potatoes-ours-backing-lexington.trycloudflare.com/webhook/nuvemshop-vendas'
+WEBHOOK_URL = 'https://n8n.jardimdofazer.com.br/webhook/nuvemshop-vendas'
 
 # ════════════════════════════════════════════════════════════════
 # Credenciais (vem do .env)
