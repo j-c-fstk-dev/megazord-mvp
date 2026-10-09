@@ -1,0 +1,87 @@
+<!-- MEGAZORD MVP - Captura de click_id v5.1 (com delay de 10s) -->
+<script>
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const clickIdFromUrl = params.get('click_id');
+
+  if (clickIdFromUrl) {
+    const expires = new Date();
+    expires.setFullYear(expires.getFullYear() + 1);
+    document.cookie = 'mgz_click_id=' + clickIdFromUrl + '; expires=' + expires.toUTCString() + '; path=/; SameSite=Lax';
+    console.log('[Megazord v5.1] click_id salvo:', clickIdFromUrl);
+  }
+
+  function getClickId() {
+    if (clickIdFromUrl) return clickIdFromUrl;
+    const match = document.cookie.match(/mgz_click_id=([^;]+)/);
+    return match ? match[1] : null;
+  }
+
+  // 1. Injeta em forms tradicionais
+  function injectIntoForm(form) {
+    const clickId = getClickId();
+    if (!clickId) return;
+    if (form.method && form.method.toLowerCase() === 'get') return;
+
+    ['extra[click_id]', 'attributes[click_id]', 'click_id'].forEach(name => {
+      if (!form.querySelector(`input[name="${name}"]`)) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = clickId;
+        form.appendChild(input);
+      }
+    });
+  }
+
+  function injectClickIdInForms() {
+    document.querySelectorAll('form').forEach(injectIntoForm);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', injectClickIdInForms);
+  } else {
+    injectClickIdInForms();
+  }
+
+  const observer = new MutationObserver(() => setTimeout(injectClickIdInForms, 100));
+  if (document.body) {
+    observer.observe(document.body, { childList: true, subtree: true });
+  } else {
+    document.addEventListener('DOMContentLoaded', () => observer.observe(document.body, { childList: true, subtree: true }));
+  }
+
+  // 2. Detecta pagina de sucesso e manda POST pro n8n
+  function sendAttribution() {
+    const clickId = getClickId();
+    if (!clickId) return;
+
+    const urlPath = window.location.pathname;
+    const successMatch = urlPath.match(/\/checkout\/v3\/success\/(\d+)/);
+    if (!successMatch) return;
+
+    const orderId = successMatch[1];
+    console.log('[Megazord v5.1] envia atribuicao:', { orderId, clickId });
+
+    fetch('https://n8n.jardimdofazer.com.br/webhook/click-atribuicao', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        click_id: clickId,
+        order_id: orderId,
+        source: 'nuvemshop-checkout-success',
+        timestamp: new Date().toISOString(),
+      }),
+    })
+    .then(r => r.json())
+    .then(data => console.log('[Megazord v5.1] OK:', data))
+    .catch(err => console.log('[Megazord v5.1] erro:', err));
+  }
+
+  // Roda com delay (espera webhook order/paid processar primeiro)
+  setTimeout(sendAttribution, 5000);   // tentativa 1: 5s
+  setTimeout(sendAttribution, 15000);  // tentativa 2: 15s (retry)
+
+  console.log('[Megazord v5.1] init. click_id atual:', getClickId());
+})();
+</script>
