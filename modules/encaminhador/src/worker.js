@@ -1,6 +1,9 @@
 /**
  * Encaminhador — Cloudflare Worker (produção)
- * Versão 2 — compatibility_date 2024-09-23
+ * Versão 3 — agora passa click_id na URL de destino
+ *
+ * Deploy:
+ *   wrangler deploy --config modules/encaminhador/wrangler.toml
  */
 
 export default {
@@ -11,7 +14,7 @@ export default {
     // Health check
     if (shortCode === 'health' || shortCode === '') {
       return new Response(
-        JSON.stringify({ status: 'ok', service: 'encaminhador', time: new Date().toISOString() }),
+        JSON.stringify({ status: 'ok', service: 'encaminhador', version: '3', time: new Date().toISOString() }),
         { headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -38,10 +41,20 @@ export default {
       return new Response('Erro ao buscar link', { status: 500 });
     }
 
-    // 2. Monta payload do clique
+    // 2. Pega o click_id (UUID que o Supabase gerou no INSERT anterior — vamos usar um novo UUID por clique)
+    // Como o Supabase gera o click_id automaticamente no INSERT, precisamos fazer o INSERT primeiro
+    // pra obter o click_id gerado. Vamos mudar a logica:
+    // - Gerar UUID aqui (crypto.randomUUID())
+    // - INSERT no Supabase com esse click_id
+    // - Redirecionar pra destination?click_id=<esse_uuid>
+
+    const clickId = crypto.randomUUID();
+
+    // 3. Monta payload do clique
     const ip = request.headers.get('cf-connecting-ip') || '';
     const ipHash = await sha256(ip);
     const clickData = {
+      click_id: clickId,  // AGORA nós definimos o click_id (antes deixava o Supabase gerar)
       short_code: shortCode,
       destination_url: link.destination,
       utm_source: url.searchParams.get('utm_source'),
@@ -54,7 +67,7 @@ export default {
       user_agent: request.headers.get('user-agent'),
     };
 
-    // 3. Registra clique em background (nao bloqueia redirect)
+    // 4. Registra clique em background (nao bloqueia redirect)
     ctx.waitUntil(
       fetch(`${env.SUPABASE_URL}/rest/v1/clicks`, {
         method: 'POST',
@@ -68,8 +81,12 @@ export default {
       }).catch((err) => console.error('click log failed:', err))
     );
 
-    // 4. Redirect 302
-    return Response.redirect(link.destination, 302);
+    // 5. Monta URL de destino COM click_id
+    const destUrl = new URL(link.destination);
+    destUrl.searchParams.set('click_id', clickId);
+
+    // 6. Redirect 302 pra destination + click_id
+    return Response.redirect(destUrl.toString(), 302);
   }
 };
 
